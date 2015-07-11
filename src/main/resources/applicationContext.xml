@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Archivo de configuracion de Contexto de Spring
+
+    Creado por Norberto Camacho Flores
+    Copyright 2014 Banco Azteca. Todos los derechos reservados
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+                      
+    <context:component-scan base-package="com.baz.scc"/>
+    
+    
+    <!-- Resolver ${property_name} usando los archivos properties indicados, -->
+    <!-- primero se utilizan las propiedades del sistema (-Dpropery_name=value) y luego los definidos -->
+    <!-- en los archivos properties (valor OVERRIDE del atributo system-properties-mode)  -->
+    
+    <context:property-placeholder location="classpath:application.properties,classpath:connection.properties" system-properties-mode="OVERRIDE" />
+    
+    
+    <bean id="usrcajaDataSource" class="oracle.ucp.jdbc.PoolDataSourceFactory" factory-method="getPoolDataSource">
+        <property name="URL" value="#{${proceso.produccion} ? '${prod.oracle.url}' : '${des.oracle.url}'}"/>
+        <property name="user" value="#{${proceso.produccion} ? '${prod.oracle.username}' : '${des.oracle.username}'}" />
+        <property name="password" value="#{${proceso.produccion} ? '${prod.oracle.password}' : '${des.oracle.password}'}" />
+        <property name="connectionFactoryClassName" value="oracle.jdbc.pool.OracleDataSource"/>
+        <property name="minPoolSize" value="2"/>
+        <property name="maxPoolSize" value="10"/>
+        <property name="initialPoolSize" value="5"/>
+        <property name="inactiveConnectionTimeout" value="120"/>
+        <property name="validateConnectionOnBorrow" value="true"/>
+        <property name="maxStatements" value="10"/>
+        <property name="sQLForValidateConnection" value="SELECT 1 FROM DUAL"/>
+    </bean>
+    
+        <bean id="sqlDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <property name="jdbcUrl" value="jdbc:jtds:sqlserver://10.54.28.114:1433/ADN"/>
+        <property name="user" value="SOPTEC" />
+        <property name="password" value="SOPTEC" />
+        <property name="driverClass" value="net.sourceforge.jtds.jdbc.Driver" />
+        
+        <property name="minPoolSize" value="2"/>
+        <property name="maxPoolSize" value="10"/>
+        <property name="acquireIncrement" value="1"/>
+        <property name="maxIdleTime" value="1800"/>
+        <property name="maxConnectionAge" value="300"/>
+        <property name="checkoutTimeout" value="${global.timeout}"/>
+        <property name="acquireRetryAttempts" value="5"/>
+        <property name="acquireRetryDelay" value="2000"/>
+        <property name="testConnectionOnCheckout" value="true"/>
+        <property name="preferredTestQuery" value="SELECT 1"/>
+    </bean>
+     
+    
+    
+    <bean id="usrcajaJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <constructor-arg ref="usrcajaDataSource" />
+    </bean>
+    
+    <bean id="sqlJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <constructor-arg ref="sqlDataSource" />
+    </bean>
+    
+    <alias name="usrcajaJdbcTemplate" alias="plantillaJdbcTemplate" />
+    <alias name="usrcajaJdbcTemplate" alias="as400JdbcTemplate"/>
+    
+    <!-- Configuraciones -->
+    <bean id="appConfig" class="com.baz.scc.turnadorprocess.support.CjCRPAppConfig">
+        <property name="procesoModo" value="${proceso.modo}" />
+        <property name="procesoModoManual" value="${proceso.modo.manual}" />
+        <property name="procesoModoRango" value="${proceso.modo.rango}" />
+        <property name="procesoSucursalModo" value="${sucursal.modo}" />
+        <property name="procesoSucursal" value="${sucursal.modo.manual.sucursal}" />
+        <property name="procesoPais" value="${sucursal.modo.manual.pais}" />
+        <property name="procesoCanal" value="${sucursal.modo.manual.canal}" />
+    </bean>
+    
+    
+<!--    <bean id="appConfig" class="com.baz.scc.transfilascaja.support.CjCRPAppConfig">
+    </bean>-->
+
+    <bean class="com.baz.scc.commons.support.CjCRDaoConfig">
+        <property name="objectUser" value="#{${proceso.produccion} ? '${prod.oracle.object.user}' : '${des.oracle.object.user}'}"/>
+    </bean>
+</beans>
